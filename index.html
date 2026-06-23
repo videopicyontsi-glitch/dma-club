@@ -1516,6 +1516,8 @@
   // Check if already logged in
   if (!sessionStorage.getItem('dma_logged_in')) {
     showAuth();
+  } else if (sessionStorage.getItem('dma_is_admin')) {
+    setTimeout(openAdminDash, 300);
   }
 
   // Tabs
@@ -1543,8 +1545,13 @@
 
     if (!user || !pass) { err.textContent = 'יש למלא את כל השדות'; err.classList.add('show'); return; }
 
-    if (users[user] && users[user].pass === pass) {
+    if (user === 'admin' && pass === 'admin123') {
+      sessionStorage.setItem('dma_logged_in', 'admin');
+      sessionStorage.setItem('dma_is_admin', '1');
+      hideAuth();
+    } else if (users[user] && users[user].pass === pass) {
       sessionStorage.setItem('dma_logged_in', user);
+      sessionStorage.removeItem('dma_is_admin');
       hideAuth();
     } else {
       err.textContent = 'שם משתמש או סיסמה שגויים';
