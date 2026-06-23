@@ -160,6 +160,86 @@
 
     .auth-error.show { display: block; }
 
+    /* ── ADMIN ── */
+    .admin-dashboard {
+      max-width: 640px;
+      width: 100%;
+    }
+
+    .admin-dashboard h2 { margin-bottom: 0.3rem; }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .stat-row-name { font-weight: 700; font-size: 1rem; }
+    .stat-row-sub  { font-size: 0.82rem; color: var(--muted); margin-top: 0.15rem; }
+
+    .stat-row-num {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--gold);
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .admin-section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin: 1.5rem 0 0.8rem;
+    }
+
+    .reg-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    .reg-table th {
+      text-align: right;
+      color: var(--gold);
+      font-weight: 700;
+      padding: 0.4rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .reg-table td {
+      padding: 0.5rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+      color: #ccd;
+    }
+
+    .reg-table tr:last-child td { border-bottom: none; }
+
+    .btn-excel {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #1a7a3a;
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.95rem;
+      padding: 0.7rem 1.6rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+      margin-top: 1.2rem;
+    }
+
+    .btn-excel:hover { background: #228b45; }
+
     /* ── PAYMENT ── */
     .pay-method-btn {
       flex: 1;
@@ -917,6 +997,7 @@
     <li><a href="#home">בית</a></li>
     <li><a href="#belts">מבחני חגורה</a></li>
     <li><a href="#shop">חנות</a></li>
+    <li><button id="adminNavBtn" style="background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.35);color:var(--gold);font-size:0.82rem;font-weight:700;padding:0.3rem 0.9rem;border-radius:6px;cursor:pointer;font-family:inherit;">⚙ מנהל</button></li>
   </ul>
 </nav>
 
@@ -1074,6 +1155,53 @@
         לאחר ביצוע ההזמנה, הציוד יחכה לכם ארוז ומוכן אצל המאמן באימון הקרוב.
       </span>
     </div>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN MODAL -->
+<div class="modal-overlay" id="adminLoginModal">
+  <div class="modal" style="max-width:360px;text-align:center">
+    <button class="modal-close" id="closeAdminLogin">✕</button>
+    <div style="font-size:2rem;margin-bottom:0.5rem">⚙</div>
+    <h2 style="margin-bottom:0.3rem">כניסת מנהל</h2>
+    <p class="modal-sub">הזינו את סיסמת המנהל</p>
+    <div class="auth-group" style="text-align:right">
+      <label>סיסמה</label>
+      <input type="password" id="adminPassInput" placeholder="סיסמת מנהל" />
+    </div>
+    <button class="form-submit" id="adminLoginBtn">כניסה</button>
+    <div class="auth-error" id="adminLoginError" style="margin-top:0.7rem">סיסמה שגויה</div>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD MODAL -->
+<div class="modal-overlay" id="adminDashModal">
+  <div class="modal admin-dashboard">
+    <button class="modal-close" id="closeAdminDash">✕</button>
+    <h2>דשבורד ניהול</h2>
+    <p class="modal-sub">סטטיסטיקות בזמן אמת</p>
+
+    <div class="admin-section-title">הזמנות לפי מוצר</div>
+    <div class="stat-row">
+      <div><div class="stat-row-name">🥋 חליפת אימון רשמית</div><div class="stat-row-sub">סה"כ יחידות שהוזמנו</div></div>
+      <div class="stat-row-num" id="stat-suit">0</div>
+    </div>
+    <div class="stat-row">
+      <div><div class="stat-row-name">🛡️ סט מגינים מלא</div><div class="stat-row-sub">סה"כ יחידות שהוזמנו</div></div>
+      <div class="stat-row-num" id="stat-guards">0</div>
+    </div>
+
+    <div class="admin-section-title">רישומי מבחני חגורה</div>
+    <div id="beltRegsWrap">
+      <div style="color:var(--muted);font-size:0.9rem">אין רישומים עדיין</div>
+    </div>
+
+    <div class="admin-section-title">הזמנות ציוד</div>
+    <div id="ordersWrap">
+      <div style="color:var(--muted);font-size:0.9rem">אין הזמנות עדיין</div>
+    </div>
+
+    <button class="btn-excel" id="exportExcelBtn">📥 הורדת Excel</button>
   </div>
 </div>
 
@@ -1278,6 +1406,16 @@
 
   document.getElementById('beltForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    var regs = JSON.parse(localStorage.getItem('dma_belt_regs') || '[]');
+    regs.push({
+      name:   this.querySelector('input[type=text]').value,
+      age:    this.querySelector('input[type=number]').value,
+      email:  this.querySelector('input[type=email]').value,
+      phone:  this.querySelector('input[type=tel]').value,
+      belt:   this.querySelector('select').value,
+      date:   new Date().toLocaleDateString('he-IL')
+    });
+    localStorage.setItem('dma_belt_regs', JSON.stringify(regs));
     document.getElementById('beltFormWrap').style.display = 'none';
     document.getElementById('beltSuccess').classList.add('show');
   });
@@ -1318,6 +1456,19 @@
   });
 
   function confirmPayment() {
+    // Save order to localStorage
+    var orders = JSON.parse(localStorage.getItem('dma_orders') || '[]');
+    var product = document.getElementById('orderProductLabel').textContent.replace('🛒 ','').trim();
+    orders.push({
+      product: product,
+      name: document.getElementById('oName').value,
+      email: document.getElementById('oEmail').value,
+      phone: document.getElementById('oPhone').value,
+      size: document.getElementById('oSize').value,
+      qty: parseInt(document.getElementById('oQty').value) || 1,
+      date: new Date().toLocaleDateString('he-IL')
+    });
+    localStorage.setItem('dma_orders', JSON.stringify(orders));
     document.getElementById('orderPayWrap').style.display = 'none';
     document.getElementById('orderSuccess').classList.add('show');
   }
@@ -1426,6 +1577,102 @@
     localStorage.setItem('dma_users', JSON.stringify(users));
     sessionStorage.setItem('dma_logged_in', user);
     hideAuth();
+  });
+
+  // ── ADMIN ──
+  var ADMIN_PASS = 'dma2024';
+  var adminLoginModal = document.getElementById('adminLoginModal');
+  var adminDashModal  = document.getElementById('adminDashModal');
+
+  document.getElementById('adminNavBtn').addEventListener('click', function() {
+    document.getElementById('adminPassInput').value = '';
+    document.getElementById('adminLoginError').classList.remove('show');
+    openModal(adminLoginModal);
+  });
+
+  document.getElementById('closeAdminLogin').addEventListener('click', function() { closeModal(adminLoginModal); });
+  document.getElementById('closeAdminDash').addEventListener('click',  function() { closeModal(adminDashModal); });
+
+  adminLoginModal.addEventListener('click', function(e) { if (e.target===this) closeModal(adminLoginModal); });
+  adminDashModal.addEventListener('click',  function(e) { if (e.target===this) closeModal(adminDashModal); });
+
+  document.getElementById('adminLoginBtn').addEventListener('click', function() {
+    if (document.getElementById('adminPassInput').value === ADMIN_PASS) {
+      closeModal(adminLoginModal);
+      openAdminDash();
+    } else {
+      document.getElementById('adminLoginError').classList.add('show');
+    }
+  });
+
+  document.getElementById('adminPassInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('adminLoginBtn').click();
+  });
+
+  function openAdminDash() {
+    var orders = JSON.parse(localStorage.getItem('dma_orders') || '[]');
+    var regs   = JSON.parse(localStorage.getItem('dma_belt_regs') || '[]');
+
+    // Count by product
+    var suitCount   = 0, guardsCount = 0;
+    orders.forEach(function(o) {
+      var q = parseInt(o.qty) || 1;
+      if (o.product.indexOf('חליפה') > -1 || o.product.indexOf('חליפת') > -1) suitCount += q;
+      else if (o.product.indexOf('מגינים') > -1) guardsCount += q;
+    });
+    document.getElementById('stat-suit').textContent   = suitCount;
+    document.getElementById('stat-guards').textContent = guardsCount;
+
+    // Belt regs table
+    var bw = document.getElementById('beltRegsWrap');
+    if (regs.length === 0) {
+      bw.innerHTML = '<div style="color:var(--muted);font-size:0.9rem">אין רישומים עדיין</div>';
+    } else {
+      var rows = regs.map(function(r) {
+        return '<tr><td>'+r.name+'</td><td>'+r.age+'</td><td>'+r.belt+'</td><td>'+r.phone+'</td><td>'+r.date+'</td></tr>';
+      }).join('');
+      bw.innerHTML = '<table class="reg-table"><thead><tr><th>שם</th><th>גיל</th><th>חגורה</th><th>טלפון</th><th>תאריך</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    }
+
+    // Orders table
+    var ow = document.getElementById('ordersWrap');
+    if (orders.length === 0) {
+      ow.innerHTML = '<div style="color:var(--muted);font-size:0.9rem">אין הזמנות עדיין</div>';
+    } else {
+      var orows = orders.map(function(o) {
+        return '<tr><td>'+o.product+'</td><td>'+o.name+'</td><td>'+o.qty+'</td><td>'+o.size+'</td><td>'+o.phone+'</td><td>'+o.date+'</td></tr>';
+      }).join('');
+      ow.innerHTML = '<table class="reg-table"><thead><tr><th>מוצר</th><th>שם</th><th>כמות</th><th>מידה</th><th>טלפון</th><th>תאריך</th></tr></thead><tbody>'+orows+'</tbody></table>';
+    }
+
+    openModal(adminDashModal);
+  }
+
+  // Export Excel (CSV)
+  document.getElementById('exportExcelBtn').addEventListener('click', function() {
+    var orders = JSON.parse(localStorage.getItem('dma_orders') || '[]');
+    var regs   = JSON.parse(localStorage.getItem('dma_belt_regs') || '[]');
+
+    var csv = '﻿'; // BOM for Hebrew
+    csv += 'רישומי מבחני חגורה\r\n';
+    csv += 'שם,גיל,חגורה,מייל,טלפון,תאריך\r\n';
+    regs.forEach(function(r) {
+      csv += [r.name,r.age,r.belt,r.email,r.phone,r.date].join(',') + '\r\n';
+    });
+
+    csv += '\r\nהזמנות ציוד\r\n';
+    csv += 'מוצר,שם,כמות,מידה,מייל,טלפון,תאריך\r\n';
+    orders.forEach(function(o) {
+      csv += [o.product,o.name,o.qty,o.size,o.email,o.phone,o.date].join(',') + '\r\n';
+    });
+
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'דמא_נתונים_' + new Date().toLocaleDateString('he-IL').replace(/\//g,'-') + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   });
 </script>
 
