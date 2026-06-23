@@ -197,6 +197,45 @@
       [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
     }
 
+    .toggle-switch { position:relative; display:inline-block; width:52px; height:28px; cursor:pointer; }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-slider {
+      position:absolute; inset:0;
+      background:#1e2d50; border-radius:28px;
+      transition: background 0.3s;
+    }
+    .toggle-slider:before {
+      content:''; position:absolute;
+      width:22px; height:22px; border-radius:50%;
+      background:#fff; left:3px; top:3px;
+      transition: transform 0.3s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: #c9a84c; }
+    .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
+
+    .section-closed {
+      background: rgba(204,34,34,0.08);
+      border: 1px solid rgba(204,34,34,0.25);
+      border-radius: 14px;
+      padding: 2rem;
+      text-align: center;
+      color: #e05555;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .ann-item {
+      display:flex; align-items:center; justify-content:space-between;
+      background:#0d1225; border:1px solid #1e2d50; border-radius:8px;
+      padding:0.7rem 1rem; font-size:0.9rem; color:#ccd; gap:0.8rem;
+    }
+    .ann-del {
+      background:rgba(204,34,34,0.15); border:1px solid rgba(204,34,34,0.3);
+      color:#e05555; font-size:0.8rem; font-weight:700; padding:0.25rem 0.7rem;
+      border-radius:6px; cursor:pointer; font-family:inherit; white-space:nowrap;
+    }
+
     /* ── ADMIN ── */
     .admin-dashboard {
       max-width: 640px;
@@ -1020,6 +1059,11 @@
   </div>
 </div>
 
+<!-- ANNOUNCEMENT BANNER -->
+<div id="announcementBanner" style="display:none;background:linear-gradient(90deg,#c9a84c,#e8c96a);color:#0a0f1e;text-align:center;padding:0.7rem 1rem;font-weight:700;font-size:0.95rem;position:relative;z-index:90;">
+  <span id="announcementText"></span>
+</div>
+
 <!-- NAV -->
 <nav>
   <div class="nav-logo">
@@ -1261,6 +1305,44 @@
     <div class="adm-panel" style="margin-bottom:2rem;">
       <div class="adm-panel-title">רישומי מבחני חגורה</div>
       <div id="adm-belts-wrap"><div class="adm-empty">אין רישומים עדיין</div></div>
+    </div>
+
+    <!-- TOGGLES -->
+    <div class="adm-panel" style="margin-bottom:1.2rem;">
+      <div class="adm-panel-title">🔧 הגדרות תכונות</div>
+      <div style="display:flex;flex-direction:column;gap:0.9rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;background:#0d1225;border:1px solid #1e2d50;border-radius:10px;padding:1rem 1.2rem;">
+          <div>
+            <div style="font-weight:700;font-size:0.95rem;">🥋 רישום לבחינות חגורה</div>
+            <div style="font-size:0.82rem;color:#7a8ab0;margin-top:0.2rem;">כאשר כבוי – הטופס נסגר ומוצגת הודעה</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggleBelts" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;background:#0d1225;border:1px solid #1e2d50;border-radius:10px;padding:1rem 1.2rem;">
+          <div>
+            <div style="font-weight:700;font-size:0.95rem;">🛍️ חנות הציוד</div>
+            <div style="font-size:0.82rem;color:#7a8ab0;margin-top:0.2rem;">כאשר כבוי – החנות נסגרת ומוצגת הודעה</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggleShop" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANNOUNCEMENTS -->
+    <div class="adm-panel" style="margin-bottom:1.2rem;">
+      <div class="adm-panel-title">📢 מודעות למשתמשים</div>
+      <div style="display:flex;gap:0.7rem;margin-bottom:1rem;">
+        <input type="text" id="announcementInput" placeholder="כתבו כאן את המודעה..." style="flex:1;background:#0d1225;border:1px solid #1e2d50;border-radius:8px;color:#f0f0f0;font-size:0.95rem;padding:0.7rem 1rem;font-family:inherit;" />
+        <button id="publishAnnouncement" style="background:#c9a84c;color:#0a0f1e;font-weight:800;font-size:0.9rem;padding:0.7rem 1.2rem;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;">פרסום</button>
+      </div>
+      <div id="announcementsList" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+      <div id="noAnnouncements" style="color:#7a8ab0;font-size:0.9rem;">אין מודעות פעילות</div>
     </div>
 
     <button class="btn-excel" id="exportExcelBtn">📥 הורדת Excel</button>
@@ -1738,6 +1820,125 @@
   document.getElementById('adminNavBtn').addEventListener('click', function() {
     if(sessionStorage.getItem('dma_is_admin')) { openAdminDash(); }
   });
+
+  // ── SITE FEATURES (runs for all users) ──
+  function applySettings() {
+    var settings = JSON.parse(localStorage.getItem('dma_settings') || '{}');
+
+    // Announcements banner
+    var anns = JSON.parse(localStorage.getItem('dma_announcements') || '[]');
+    if (anns.length) {
+      document.getElementById('announcementText').textContent = anns[anns.length-1].text;
+      document.getElementById('announcementBanner').style.display = 'block';
+    } else {
+      document.getElementById('announcementBanner').style.display = 'none';
+    }
+
+    // Belt exam toggle
+    var beltsOpen = settings.beltsOpen !== false;
+    var beltSection = document.querySelector('#belts .section-wrap');
+    if (beltSection) {
+      var closedEl = document.getElementById('belts-closed-msg');
+      var ctaEl    = document.querySelector('.register-cta');
+      if (!beltsOpen) {
+        if (!closedEl) {
+          var d = document.createElement('div');
+          d.id = 'belts-closed-msg';
+          d.className = 'section-closed';
+          d.textContent = '🔒 הרשמה למבחני חגורה סגורה כרגע – המאמן יעדכן בקרוב';
+          if (ctaEl) beltSection.insertBefore(d, ctaEl);
+        }
+        if (ctaEl) ctaEl.style.display = 'none';
+      } else {
+        if (closedEl) closedEl.remove();
+        if (ctaEl) ctaEl.style.display = '';
+      }
+    }
+
+    // Shop toggle
+    var shopOpen = settings.shopOpen !== false;
+    var shopProducts = document.querySelector('.products');
+    var shopClosed   = document.getElementById('shop-closed-msg');
+    if (shopProducts) {
+      if (!shopOpen) {
+        shopProducts.style.display = 'none';
+        if (!shopClosed) {
+          var sd = document.createElement('div');
+          sd.id = 'shop-closed-msg';
+          sd.className = 'section-closed';
+          sd.textContent = '🔒 החנות סגורה כרגע – המאמן יעדכן בקרוב';
+          shopProducts.parentNode.insertBefore(sd, shopProducts);
+        }
+      } else {
+        shopProducts.style.display = '';
+        if (shopClosed) shopClosed.remove();
+      }
+    }
+  }
+
+  // Run on load
+  applySettings();
+
+  // ── ADMIN TOGGLES ──
+  function initAdminToggles() {
+    var settings = JSON.parse(localStorage.getItem('dma_settings') || '{}');
+    document.getElementById('toggleBelts').checked = settings.beltsOpen !== false;
+    document.getElementById('toggleShop').checked  = settings.shopOpen  !== false;
+
+    document.getElementById('toggleBelts').addEventListener('change', function() {
+      var s = JSON.parse(localStorage.getItem('dma_settings') || '{}');
+      s.beltsOpen = this.checked;
+      localStorage.setItem('dma_settings', JSON.stringify(s));
+      applySettings();
+    });
+
+    document.getElementById('toggleShop').addEventListener('change', function() {
+      var s = JSON.parse(localStorage.getItem('dma_settings') || '{}');
+      s.shopOpen = this.checked;
+      localStorage.setItem('dma_settings', JSON.stringify(s));
+      applySettings();
+    });
+  }
+
+  // ── ANNOUNCEMENTS ──
+  function renderAnnouncements() {
+    var anns = JSON.parse(localStorage.getItem('dma_announcements') || '[]');
+    var list = document.getElementById('announcementsList');
+    var none = document.getElementById('noAnnouncements');
+    if (!anns.length) { list.innerHTML = ''; none.style.display = 'block'; return; }
+    none.style.display = 'none';
+    list.innerHTML = anns.map(function(a, i) {
+      return '<div class="ann-item"><span>📢 ' + a.text + '</span><button class="ann-del" data-i="'+i+'">הסר</button></div>';
+    }).join('');
+    list.querySelectorAll('.ann-del').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var anns2 = JSON.parse(localStorage.getItem('dma_announcements') || '[]');
+        anns2.splice(parseInt(this.dataset.i), 1);
+        localStorage.setItem('dma_announcements', JSON.stringify(anns2));
+        renderAnnouncements();
+        applySettings();
+      });
+    });
+  }
+
+  document.getElementById('publishAnnouncement').addEventListener('click', function() {
+    var txt = document.getElementById('announcementInput').value.trim();
+    if (!txt) return;
+    var anns = JSON.parse(localStorage.getItem('dma_announcements') || '[]');
+    anns.push({ text: txt, date: new Date().toLocaleDateString('he-IL') });
+    localStorage.setItem('dma_announcements', JSON.stringify(anns));
+    document.getElementById('announcementInput').value = '';
+    renderAnnouncements();
+    applySettings();
+  });
+
+  // override openAdminDash to also init toggles & announcements
+  var _origOpenAdminDash = openAdminDash;
+  openAdminDash = function() {
+    _origOpenAdminDash();
+    initAdminToggles();
+    renderAnnouncements();
+  };
 
   // Export Excel (CSV)
   document.getElementById('exportExcelBtn').addEventListener('click', function() {
