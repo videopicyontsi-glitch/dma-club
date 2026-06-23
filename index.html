@@ -1060,8 +1060,13 @@
 </div>
 
 <!-- ANNOUNCEMENT BANNER -->
-<div id="announcementBanner" style="display:none;background:linear-gradient(90deg,#c9a84c,#e8c96a);color:#0a0f1e;text-align:center;padding:0.7rem 1rem;font-weight:700;font-size:0.95rem;position:relative;z-index:90;">
-  <span id="announcementText"></span>
+<div id="announcementBanner" style="display:none;position:relative;z-index:90;">
+  <div id="annBannerText" style="display:none;background:linear-gradient(90deg,#c9a84c,#e8c96a);color:#0a0f1e;text-align:center;padding:0.7rem 1rem;font-weight:700;font-size:0.95rem;">
+    <span id="announcementText"></span>
+  </div>
+  <div id="annBannerImg" style="display:none;text-align:center;background:#0a0f1e;padding:1rem;">
+    <img id="announcementImg" style="max-height:300px;max-width:100%;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.5);" />
+  </div>
 </div>
 
 <!-- NAV -->
@@ -1321,9 +1326,17 @@
     <!-- ANNOUNCEMENTS -->
     <div class="adm-panel" style="margin-bottom:1.2rem;">
       <div class="adm-panel-title">📢 מודעות למשתמשים</div>
-      <div style="display:flex;gap:0.7rem;margin-bottom:1rem;">
-        <input type="text" id="announcementInput" placeholder="כתבו כאן את המודעה..." style="flex:1;background:#0d1225;border:1px solid #1e2d50;border-radius:8px;color:#f0f0f0;font-size:0.95rem;padding:0.7rem 1rem;font-family:inherit;" />
-        <button id="publishAnnouncement" style="background:#c9a84c;color:#0a0f1e;font-weight:800;font-size:0.9rem;padding:0.7rem 1.2rem;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;">פרסום</button>
+      <div style="display:flex;flex-direction:column;gap:0.7rem;margin-bottom:1rem;">
+        <input type="text" id="announcementInput" placeholder="כתבו כאן את המודעה..." style="width:100%;background:#0d1225;border:1px solid #1e2d50;border-radius:8px;color:#f0f0f0;font-size:0.95rem;padding:0.7rem 1rem;font-family:inherit;" />
+        <div style="display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap;">
+          <label style="display:flex;align-items:center;gap:0.5rem;background:#0d1225;border:1px solid #1e2d50;border-radius:8px;padding:0.6rem 1rem;cursor:pointer;color:#ccd;font-size:0.88rem;font-weight:600;">
+            🖼 הוספת תמונה
+            <input type="file" id="announcementImg" accept="image/*" style="display:none;" />
+          </label>
+          <span id="annImgName" style="color:#7a8ab0;font-size:0.82rem;flex:1;"></span>
+          <button id="publishAnnouncement" style="background:#c9a84c;color:#0a0f1e;font-weight:800;font-size:0.9rem;padding:0.7rem 1.4rem;border:none;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;">פרסום</button>
+        </div>
+        <div id="annImgPreview" style="display:none;"><img id="annImgPreviewImg" style="max-height:120px;border-radius:8px;border:1px solid #1e2d50;" /></div>
       </div>
       <div id="announcementsList" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
       <div id="noAnnouncements" style="color:#7a8ab0;font-size:0.9rem;">אין מודעות פעילות</div>
@@ -1811,11 +1824,23 @@
 
     // Announcements banner
     var anns = JSON.parse(localStorage.getItem('dma_announcements') || '[]');
+    var banner = document.getElementById('announcementBanner');
+    var bannerText = document.getElementById('annBannerText');
+    var bannerImg  = document.getElementById('annBannerImg');
+    var bannerImgEl = document.getElementById('announcementImg');
     if (anns.length) {
-      document.getElementById('announcementText').textContent = anns[anns.length-1].text;
-      document.getElementById('announcementBanner').style.display = 'block';
+      var last = anns[anns.length-1];
+      banner.style.display = 'block';
+      if (last.text) {
+        document.getElementById('announcementText').textContent = last.text;
+        bannerText.style.display = 'block';
+      } else { bannerText.style.display = 'none'; }
+      if (last.img) {
+        bannerImgEl.src = last.img;
+        bannerImg.style.display = 'block';
+      } else { bannerImg.style.display = 'none'; }
     } else {
-      document.getElementById('announcementBanner').style.display = 'none';
+      banner.style.display = 'none';
     }
 
     // Belt exam toggle
@@ -1892,7 +1917,9 @@
     if (!anns.length) { list.innerHTML = ''; none.style.display = 'block'; return; }
     none.style.display = 'none';
     list.innerHTML = anns.map(function(a, i) {
-      return '<div class="ann-item"><span>📢 ' + a.text + '</span><button class="ann-del" data-i="'+i+'">הסר</button></div>';
+      var imgPart = a.img ? '<img src="'+a.img+'" style="height:40px;border-radius:5px;vertical-align:middle;margin-left:0.5rem;" />' : '';
+      var label = a.text ? ('📢 ' + a.text) : '🖼 תמונה';
+      return '<div class="ann-item">'+imgPart+'<span style="flex:1">'+label+'</span><button class="ann-del" data-i="'+i+'">הסר</button></div>';
     }).join('');
     list.querySelectorAll('.ann-del').forEach(function(btn) {
       btn.addEventListener('click', function() {
@@ -1905,13 +1932,32 @@
     });
   }
 
+  // Image preview in admin
+  var _annImgData = null;
+  document.getElementById('announcementImg').addEventListener('change', function() {
+    var file = this.files[0];
+    if (!file) return;
+    document.getElementById('annImgName').textContent = file.name;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      _annImgData = e.target.result;
+      document.getElementById('annImgPreviewImg').src = _annImgData;
+      document.getElementById('annImgPreview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+
   document.getElementById('publishAnnouncement').addEventListener('click', function() {
     var txt = document.getElementById('announcementInput').value.trim();
-    if (!txt) return;
+    if (!txt && !_annImgData) return;
     var anns = JSON.parse(localStorage.getItem('dma_announcements') || '[]');
-    anns.push({ text: txt, date: new Date().toLocaleDateString('he-IL') });
+    anns.push({ text: txt, img: _annImgData || null, date: new Date().toLocaleDateString('he-IL') });
     localStorage.setItem('dma_announcements', JSON.stringify(anns));
     document.getElementById('announcementInput').value = '';
+    document.getElementById('announcementImg').value = '';
+    document.getElementById('annImgName').textContent = '';
+    document.getElementById('annImgPreview').style.display = 'none';
+    _annImgData = null;
     renderAnnouncements();
     applySettings();
   });
