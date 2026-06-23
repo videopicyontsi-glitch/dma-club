@@ -812,6 +812,8 @@
     }
 
     .size-tag {
+      cursor: pointer;
+      transition: all 0.15s;
       font-size: 0.76rem;
       font-weight: 600;
       color: #aab;
@@ -819,7 +821,11 @@
       border: 1px solid var(--border);
       padding: 0.2rem 0.6rem;
       border-radius: 6px;
+      user-select: none;
     }
+
+    .size-tag:hover { border-color: var(--gold); color: var(--gold); }
+    .size-tag.selected { background: var(--gold); color: var(--black); border-color: var(--gold); font-weight: 800; }
 
     .product-footer {
       display: flex;
@@ -1535,10 +1541,25 @@
     closeModal(orderModal);
   });
 
+  // Size tag selection
+  document.querySelectorAll('.product-card').forEach(function(card) {
+    card.querySelectorAll('.size-tag').forEach(function(tag) {
+      tag.addEventListener('click', function() {
+        card.querySelectorAll('.size-tag').forEach(function(t) { t.classList.remove('selected'); });
+        this.classList.add('selected');
+      });
+    });
+  });
+
   document.querySelectorAll('.btn-order').forEach(function(btn) {
     btn.addEventListener('click', function() {
+      var card    = this.closest('.product-card');
       var product = this.getAttribute('data-product');
+      var selected = card ? card.querySelector('.size-tag.selected') : null;
+      var size    = selected ? selected.textContent : '';
+
       document.getElementById('orderProductLabel').textContent = '🛒 ' + product;
+      document.getElementById('oSize').value = size;
       document.getElementById('orderFormWrap').style.display = 'block';
       document.getElementById('orderSuccess').classList.remove('show');
       openModal(orderModal);
