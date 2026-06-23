@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>הזהב – אומנויות לחימה D.M.A</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -159,6 +160,42 @@
     }
 
     .auth-error.show { display: block; }
+
+    /* ── ADMIN PANEL ── */
+    .adm-card {
+      background: #111827;
+      border: 1px solid #1e2d50;
+      border-radius: 14px;
+      padding: 1.4rem;
+      text-align: center;
+    }
+    .adm-card-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
+    .adm-card-num  { font-size: 2.4rem; font-weight: 900; color: #c9a84c; line-height: 1; }
+    .adm-card-label{ font-size: 0.82rem; color: #7a8ab0; margin-top: 0.3rem; }
+    .adm-panel {
+      background: #111827;
+      border: 1px solid #1e2d50;
+      border-radius: 14px;
+      padding: 1.4rem;
+    }
+    .adm-panel-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #c9a84c;
+      margin-bottom: 1.2rem;
+    }
+    .adm-empty { color: #7a8ab0; font-size: 0.9rem; }
+    .adm-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    .adm-table th { text-align: right; color: #c9a84c; font-weight: 700; padding: 0.4rem 0.7rem; border-bottom: 1px solid #1e2d50; }
+    .adm-table td { padding: 0.55rem 0.7rem; border-bottom: 1px solid #1e2d50; color: #ccd; }
+    .adm-table tr:last-child td { border-bottom: none; }
+    .adm-table tr:hover td { background: rgba(201,168,76,0.04); }
+    @media(max-width:600px) {
+      #adminPanel > div:last-child { padding: 1rem; }
+      [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+    }
 
     /* ── ADMIN ── */
     .admin-dashboard {
@@ -1158,47 +1195,72 @@
   </div>
 </div>
 
-<!-- ADMIN LOGIN MODAL -->
-<div class="modal-overlay" id="adminLoginModal">
-  <div class="modal" style="max-width:360px;text-align:center">
-    <button class="modal-close" id="closeAdminLogin">✕</button>
-    <div style="font-size:2rem;margin-bottom:0.5rem">⚙</div>
-    <h2 style="margin-bottom:0.3rem">כניסת מנהל</h2>
-    <p class="modal-sub">הזינו את סיסמת המנהל</p>
-    <div class="auth-group" style="text-align:right">
-      <label>סיסמה</label>
-      <input type="password" id="adminPassInput" placeholder="סיסמת מנהל" />
+<!-- ADMIN FULL DASHBOARD -->
+<div id="adminPanel" style="display:none;position:fixed;inset:0;z-index:500;background:#0a0f1e;overflow-y:auto;font-family:'Segoe UI',Arial,sans-serif;direction:rtl;">
+
+  <!-- TOP BAR -->
+  <div style="background:#0d1225;border-bottom:1px solid #1e2d50;padding:0 2rem;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;">
+    <div style="display:flex;align-items:center;gap:0.8rem;">
+      <span style="font-size:1.3rem">⚙</span>
+      <span style="font-weight:900;color:#c9a84c;font-size:1.1rem;">פרופיל ניהול – D.M.A</span>
     </div>
-    <button class="form-submit" id="adminLoginBtn">כניסה</button>
-    <div class="auth-error" id="adminLoginError" style="margin-top:0.7rem">סיסמה שגויה</div>
+    <button id="adminLogout" style="background:rgba(204,34,34,0.15);border:1px solid rgba(204,34,34,0.4);color:#e05555;font-size:0.85rem;font-weight:700;padding:0.4rem 1rem;border-radius:6px;cursor:pointer;font-family:inherit;">יציאה</button>
   </div>
-</div>
 
-<!-- ADMIN DASHBOARD MODAL -->
-<div class="modal-overlay" id="adminDashModal">
-  <div class="modal admin-dashboard">
-    <button class="modal-close" id="closeAdminDash">✕</button>
-    <h2>דשבורד ניהול</h2>
-    <p class="modal-sub">סטטיסטיקות בזמן אמת</p>
+  <div style="max-width:1100px;margin:0 auto;padding:2rem 1.5rem;">
 
-    <div class="admin-section-title">הזמנות לפי מוצר</div>
-    <div class="stat-row">
-      <div><div class="stat-row-name">🥋 חליפת אימון רשמית</div><div class="stat-row-sub">סה"כ יחידות שהוזמנו</div></div>
-      <div class="stat-row-num" id="stat-suit">0</div>
+    <!-- KPI CARDS -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem;">
+      <div class="adm-card">
+        <div class="adm-card-icon">👥</div>
+        <div class="adm-card-num" id="kpi-users">0</div>
+        <div class="adm-card-label">משתמשים רשומים</div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-icon">🛍️</div>
+        <div class="adm-card-num" id="kpi-orders">0</div>
+        <div class="adm-card-label">הזמנות ציוד</div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-icon">🥋</div>
+        <div class="adm-card-num" id="kpi-belts">0</div>
+        <div class="adm-card-label">רישומי חגורה</div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-icon">📦</div>
+        <div class="adm-card-num" id="kpi-units">0</div>
+        <div class="adm-card-label">יחידות שהוזמנו</div>
+      </div>
     </div>
-    <div class="stat-row">
-      <div><div class="stat-row-name">🛡️ סט מגינים מלא</div><div class="stat-row-sub">סה"כ יחידות שהוזמנו</div></div>
-      <div class="stat-row-num" id="stat-guards">0</div>
+
+    <!-- CHARTS ROW -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:2rem;">
+      <div class="adm-panel">
+        <div class="adm-panel-title">הזמנות לפי מוצר</div>
+        <canvas id="chartProducts" height="200"></canvas>
+      </div>
+      <div class="adm-panel">
+        <div class="adm-panel-title">רישומי חגורה לפי דרגה</div>
+        <canvas id="chartBelts" height="200"></canvas>
+      </div>
     </div>
 
-    <div class="admin-section-title">רישומי מבחני חגורה</div>
-    <div id="beltRegsWrap">
-      <div style="color:var(--muted);font-size:0.9rem">אין רישומים עדיין</div>
+    <!-- USERS TABLE -->
+    <div class="adm-panel" style="margin-bottom:1.2rem;">
+      <div class="adm-panel-title">משתמשים רשומים</div>
+      <div id="adm-users-wrap"><div class="adm-empty">אין משתמשים עדיין</div></div>
     </div>
 
-    <div class="admin-section-title">הזמנות ציוד</div>
-    <div id="ordersWrap">
-      <div style="color:var(--muted);font-size:0.9rem">אין הזמנות עדיין</div>
+    <!-- ORDERS TABLE -->
+    <div class="adm-panel" style="margin-bottom:1.2rem;">
+      <div class="adm-panel-title">הזמנות ציוד</div>
+      <div id="adm-orders-wrap"><div class="adm-empty">אין הזמנות עדיין</div></div>
+    </div>
+
+    <!-- BELT REGS TABLE -->
+    <div class="adm-panel" style="margin-bottom:2rem;">
+      <div class="adm-panel-title">רישומי מבחני חגורה</div>
+      <div id="adm-belts-wrap"><div class="adm-empty">אין רישומים עדיין</div></div>
     </div>
 
     <button class="btn-excel" id="exportExcelBtn">📥 הורדת Excel</button>
@@ -1517,7 +1579,7 @@
   if (!sessionStorage.getItem('dma_logged_in')) {
     showAuth();
   } else if (sessionStorage.getItem('dma_is_admin')) {
-    setTimeout(openAdminDash, 300);
+    openAdminDash();
   }
 
   // Tabs
@@ -1549,6 +1611,7 @@
       sessionStorage.setItem('dma_logged_in', 'admin');
       sessionStorage.setItem('dma_is_admin', '1');
       hideAuth();
+      openAdminDash();
     } else if (users[user] && users[user].pass === pass) {
       sessionStorage.setItem('dma_logged_in', user);
       sessionStorage.removeItem('dma_is_admin');
@@ -1587,99 +1650,116 @@
   });
 
   // ── ADMIN ──
-  var ADMIN_PASS = 'dma2024';
-  var adminLoginModal = document.getElementById('adminLoginModal');
-  var adminDashModal  = document.getElementById('adminDashModal');
-
-  document.getElementById('adminNavBtn').addEventListener('click', function() {
-    document.getElementById('adminPassInput').value = '';
-    document.getElementById('adminLoginError').classList.remove('show');
-    openModal(adminLoginModal);
-  });
-
-  document.getElementById('closeAdminLogin').addEventListener('click', function() { closeModal(adminLoginModal); });
-  document.getElementById('closeAdminDash').addEventListener('click',  function() { closeModal(adminDashModal); });
-
-  adminLoginModal.addEventListener('click', function(e) { if (e.target===this) closeModal(adminLoginModal); });
-  adminDashModal.addEventListener('click',  function(e) { if (e.target===this) closeModal(adminDashModal); });
-
-  document.getElementById('adminLoginBtn').addEventListener('click', function() {
-    if (document.getElementById('adminPassInput').value === ADMIN_PASS) {
-      closeModal(adminLoginModal);
-      openAdminDash();
-    } else {
-      document.getElementById('adminLoginError').classList.add('show');
-    }
-  });
-
-  document.getElementById('adminPassInput').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') document.getElementById('adminLoginBtn').click();
-  });
+  var chartProductsInst = null, chartBeltsInst = null;
 
   function openAdminDash() {
     var orders = JSON.parse(localStorage.getItem('dma_orders') || '[]');
     var regs   = JSON.parse(localStorage.getItem('dma_belt_regs') || '[]');
+    var users  = JSON.parse(localStorage.getItem('dma_users') || '{}');
 
-    // Count by product
-    var suitCount   = 0, guardsCount = 0;
-    orders.forEach(function(o) {
-      var q = parseInt(o.qty) || 1;
-      if (o.product.indexOf('חליפה') > -1 || o.product.indexOf('חליפת') > -1) suitCount += q;
-      else if (o.product.indexOf('מגינים') > -1) guardsCount += q;
+    // KPI
+    var totalUnits = orders.reduce(function(s,o){ return s+(parseInt(o.qty)||1); }, 0);
+    document.getElementById('kpi-users').textContent  = Object.keys(users).length;
+    document.getElementById('kpi-orders').textContent = orders.length;
+    document.getElementById('kpi-belts').textContent  = regs.length;
+    document.getElementById('kpi-units').textContent  = totalUnits;
+
+    // Product chart
+    var suitQ=0, guardsQ=0;
+    orders.forEach(function(o){
+      var q=parseInt(o.qty)||1;
+      if(o.product.indexOf('חליפ')>-1) suitQ+=q;
+      else if(o.product.indexOf('מגינ')>-1) guardsQ+=q;
     });
-    document.getElementById('stat-suit').textContent   = suitCount;
-    document.getElementById('stat-guards').textContent = guardsCount;
+    if(chartProductsInst) chartProductsInst.destroy();
+    chartProductsInst = new Chart(document.getElementById('chartProducts'), {
+      type:'doughnut',
+      data:{ labels:['חליפת אימון','סט מגינים'], datasets:[{ data:[suitQ,guardsQ], backgroundColor:['#c9a84c','#1a3a8f'], borderWidth:0 }] },
+      options:{ plugins:{ legend:{ labels:{ color:'#ccd', font:{size:13} } } }, cutout:'65%' }
+    });
 
-    // Belt regs table
-    var bw = document.getElementById('beltRegsWrap');
-    if (regs.length === 0) {
-      bw.innerHTML = '<div style="color:var(--muted);font-size:0.9rem">אין רישומים עדיין</div>';
+    // Belt chart
+    var beltCounts = {};
+    regs.forEach(function(r){ beltCounts[r.belt] = (beltCounts[r.belt]||0)+1; });
+    var bLabels = Object.keys(beltCounts), bData = bLabels.map(function(k){ return beltCounts[k]; });
+    if(chartBeltsInst) chartBeltsInst.destroy();
+    chartBeltsInst = new Chart(document.getElementById('chartBelts'), {
+      type:'bar',
+      data:{ labels: bLabels.length ? bLabels : ['אין נתונים'], datasets:[{ data: bData.length ? bData : [0], backgroundColor:'#c9a84c', borderRadius:6 }] },
+      options:{ plugins:{ legend:{display:false} }, scales:{ x:{ticks:{color:'#ccd'}}, y:{ticks:{color:'#ccd', stepSize:1}, grid:{color:'#1e2d50'}} } }
+    });
+
+    // Users table
+    var uw = document.getElementById('adm-users-wrap');
+    var uKeys = Object.keys(users);
+    if(!uKeys.length) {
+      uw.innerHTML = '<div class="adm-empty">אין משתמשים עדיין</div>';
     } else {
-      var rows = regs.map(function(r) {
-        return '<tr><td>'+r.name+'</td><td>'+r.age+'</td><td>'+r.belt+'</td><td>'+r.phone+'</td><td>'+r.date+'</td></tr>';
-      }).join('');
-      bw.innerHTML = '<table class="reg-table"><thead><tr><th>שם</th><th>גיל</th><th>חגורה</th><th>טלפון</th><th>תאריך</th></tr></thead><tbody>'+rows+'</tbody></table>';
+      uw.innerHTML = '<table class="adm-table"><thead><tr><th>שם משתמש</th><th>טלפון</th></tr></thead><tbody>' +
+        uKeys.map(function(u){ return '<tr><td>'+u+'</td><td>'+(users[u].phone||'—')+'</td></tr>'; }).join('') +
+        '</tbody></table>';
     }
 
     // Orders table
-    var ow = document.getElementById('ordersWrap');
-    if (orders.length === 0) {
-      ow.innerHTML = '<div style="color:var(--muted);font-size:0.9rem">אין הזמנות עדיין</div>';
+    var ow = document.getElementById('adm-orders-wrap');
+    if(!orders.length) {
+      ow.innerHTML = '<div class="adm-empty">אין הזמנות עדיין</div>';
     } else {
-      var orows = orders.map(function(o) {
-        return '<tr><td>'+o.product+'</td><td>'+o.name+'</td><td>'+o.qty+'</td><td>'+o.size+'</td><td>'+o.phone+'</td><td>'+o.date+'</td></tr>';
-      }).join('');
-      ow.innerHTML = '<table class="reg-table"><thead><tr><th>מוצר</th><th>שם</th><th>כמות</th><th>מידה</th><th>טלפון</th><th>תאריך</th></tr></thead><tbody>'+orows+'</tbody></table>';
+      ow.innerHTML = '<table class="adm-table"><thead><tr><th>מוצר</th><th>שם</th><th>כמות</th><th>מידה</th><th>טלפון</th><th>תאריך</th></tr></thead><tbody>' +
+        orders.map(function(o){ return '<tr><td>'+o.product+'</td><td>'+o.name+'</td><td>'+o.qty+'</td><td>'+o.size+'</td><td>'+o.phone+'</td><td>'+o.date+'</td></tr>'; }).join('') +
+        '</tbody></table>';
     }
 
-    openModal(adminDashModal);
+    // Belts table
+    var bw = document.getElementById('adm-belts-wrap');
+    if(!regs.length) {
+      bw.innerHTML = '<div class="adm-empty">אין רישומים עדיין</div>';
+    } else {
+      bw.innerHTML = '<table class="adm-table"><thead><tr><th>שם</th><th>גיל</th><th>חגורה</th><th>טלפון</th><th>תאריך</th></tr></thead><tbody>' +
+        regs.map(function(r){ return '<tr><td>'+r.name+'</td><td>'+r.age+'</td><td>'+r.belt+'</td><td>'+r.phone+'</td><td>'+r.date+'</td></tr>'; }).join('') +
+        '</tbody></table>';
+    }
+
+    document.getElementById('adminPanel').style.display = 'block';
+    document.body.style.overflow = 'hidden';
   }
+
+  function closeAdminDash() {
+    document.getElementById('adminPanel').style.display = 'none';
+    document.body.style.overflow = '';
+    sessionStorage.removeItem('dma_is_admin');
+    sessionStorage.removeItem('dma_logged_in');
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  document.getElementById('adminLogout').addEventListener('click', closeAdminDash);
+
+  document.getElementById('adminNavBtn').addEventListener('click', function() {
+    if(sessionStorage.getItem('dma_is_admin')) { openAdminDash(); }
+  });
 
   // Export Excel (CSV)
   document.getElementById('exportExcelBtn').addEventListener('click', function() {
     var orders = JSON.parse(localStorage.getItem('dma_orders') || '[]');
     var regs   = JSON.parse(localStorage.getItem('dma_belt_regs') || '[]');
+    var users  = JSON.parse(localStorage.getItem('dma_users') || '{}');
 
-    var csv = '﻿'; // BOM for Hebrew
-    csv += 'רישומי מבחני חגורה\r\n';
-    csv += 'שם,גיל,חגורה,מייל,טלפון,תאריך\r\n';
-    regs.forEach(function(r) {
-      csv += [r.name,r.age,r.belt,r.email,r.phone,r.date].join(',') + '\r\n';
-    });
+    var csv = '﻿';
+    csv += 'משתמשים רשומים\r\nשם משתמש,טלפון\r\n';
+    Object.keys(users).forEach(function(u){ csv += u+','+(users[u].phone||'')+'\r\n'; });
 
-    csv += '\r\nהזמנות ציוד\r\n';
-    csv += 'מוצר,שם,כמות,מידה,מייל,טלפון,תאריך\r\n';
-    orders.forEach(function(o) {
-      csv += [o.product,o.name,o.qty,o.size,o.email,o.phone,o.date].join(',') + '\r\n';
-    });
+    csv += '\r\nרישומי מבחני חגורה\r\nשם,גיל,חגורה,מייל,טלפון,תאריך\r\n';
+    regs.forEach(function(r){ csv += [r.name,r.age,r.belt,r.email,r.phone,r.date].join(',')+'\r\n'; });
 
-    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'דמא_נתונים_' + new Date().toLocaleDateString('he-IL').replace(/\//g,'-') + '.csv';
+    csv += '\r\nהזמנות ציוד\r\nמוצר,שם,כמות,מידה,מייל,טלפון,תאריך\r\n';
+    orders.forEach(function(o){ csv += [o.product,o.name,o.qty,o.size,o.email,o.phone,o.date].join(',')+'\r\n'; });
+
+    var blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'דמא_נתונים_'+new Date().toLocaleDateString('he-IL').replace(/\//g,'-')+'.csv';
     a.click();
-    URL.revokeObjectURL(url);
   });
 </script>
 
